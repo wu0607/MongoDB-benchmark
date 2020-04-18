@@ -24,17 +24,17 @@ def print_table(printDB):
 def updateAndGetTime(op, insertDB, insertDict, threadIdx):
     count = 0
     totalTime = 0
-    while(count < 100):
+    while(True):
         count += 1
-        start = time.time_ns()
+        start = time.time()
         insertDB.update_one(insertDict, {"$set": {"value": count}})
-        end = time.time_ns()
+        end = time.time()
         totalTime += (end - start)
 
-        if count and count % 20 == 0:
-            print("{:8s}- {}: count: {}, avg_time: {}ns, total time:\
-                 {} ".format(op, threadIdx//2, count,
-                             totalTime/count, totalTime))
+        if count and count % 100 == 0:
+            print("{:8s}- {}: count: {}, avg_time: {}ms, total time:\
+                 {}ms ".format(op, threadIdx//2, count,
+                             totalTime*1000/count, totalTime*1000))
 
 
 def threadFunction(args):
