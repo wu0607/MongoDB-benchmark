@@ -10,7 +10,7 @@ WEAK = "[WEAK]"
 strongDict = {"node": "/1", "value": "strong"}
 weakDict = {"node": "/2", "value": "weak"}
 CLINUM = 6
-hostname = "mongodb://localhost:27019/"
+hostname = "mongodb://localhost:27017/"
 
 
 def print_table(printDB):
@@ -32,7 +32,7 @@ def updateAndGetTime(op, insertDB, insertDict, threadIdx):
 
         if count and count % 1000 == 0:
             print("{:8s}- {}: count: {}, avg_time: {}ms, total time:\
-                 {}ms ".format(op, threadIdx//2, count,
+                 {}ms ".format(op, threadIdx, count,
                              totalTime*1000/count, totalTime*1000))
 
 
@@ -48,19 +48,21 @@ if __name__ == '__main__':
     # argparse
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument("--host", help="host ip")
-    parser.add_argument("--weak", action='store_true', help='weak request')
-    parser.add_argument("--strong", action='store_true', help='strong request')
+    parser.add_argument("--mode", type=str, default="strong", help="strong weak mix")
+    # parser.add_argument("--weak", action='store_true', help='weak request')
+    # parser.add_argument("--strong", action='store_true', help='strong request')
     opt = parser.parse_args()
     if opt.host:
         hostname = opt.host
-
-    if opt.strong:
-        strongClient = pymongo.MongoClient(hostname, w="majority", j=True, maxPoolSize=5)
+    
+    opt.mode = opt.mode.lower()
+    if opt.mode == "strong" or opt.mode == "mix":
+        strongClient = pymongo.MongoClient(hostname, w="majority", j=True, maxPoolSize=20)
         strongDB = strongClient[MYDB]
         strongCol = strongDB[TABLENAME]
         strongCol.insert_one(strongDict) # init with /1
-    if opt.weak:
-        weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=5)
+    if opt.mode == "weak" or opt.mode == "mix":
+        weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=20)
         weakDB = weakClient[MYDB]
         weakCol = weakDB[TABLENAME]
         weakCol.insert_one(weakDict) # init with /2
@@ -68,14 +70,21 @@ if __name__ == '__main__':
     print("done creating client..")
 
     threadList = []
-    for i in range(CLINUM): 
-        if i % 2 == 0:
-            if opt.strong:
+    for i in range(CLINUM):
+        if opt.mode == "strong":
+            x = threading.Thread(target=threadFunction, args=((STRONG, i),))
+            threadList.append(x)
+            x.start()
+        elif opt.mode == "weak":
+            x = threading.Thread(target=threadFunction, args=((WEAK, i),))
+            threadList.append(x)
+            x.start()
+        elif opt.mode == "mix":
+            if i % 2 == 0:
                 x = threading.Thread(target=threadFunction, args=((STRONG, i),))
                 threadList.append(x)
                 x.start()
-        else:
-            if opt.weak:
+            else:
                 x = threading.Thread(target=threadFunction, args=((WEAK, i),))
                 threadList.append(x)
                 x.start()
