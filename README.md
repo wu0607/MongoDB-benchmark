@@ -9,7 +9,7 @@ Three different client settings:
 ### Quick start for Ubuntu
 ```
 ./install.sh # install mongodb
-python measure.py
+python measure.py --strong --weak
 ```
 
 ### Run 3-node server(master-slave) on single machine (Ubuntu)
@@ -59,4 +59,4 @@ rs.initiate( {
    ]
 })
 ```
-8. Run `rs.status()` in mongodb and find out node with `"stateStr" : "PRIMARY"`, use this ip address to run `measure.py --host [master_ip]:[master_port]`
+8. Run `rs.status()` in mongodb and find out node with `"stateStr" : "PRIMARY"`, use this ip address to run `measure.py --host [master_ip]:[master_port] --strong --weak`
