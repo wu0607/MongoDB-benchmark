@@ -52,15 +52,19 @@ if __name__ == '__main__':
     if parser.parse_args().host:
         hostname = parser.parse_args().host
 
+    # strongClient = pymongo.MongoClient(hostname, w="majority", j=True, maxPoolSize=5, replicaset="rs0")
     strongClient = pymongo.MongoClient(hostname, w="majority", j=True, maxPoolSize=5)
     strongDB = strongClient[MYDB]
     strongCol = strongDB[TABLENAME]
     strongCol.insert_one(strongDict)
 
     weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=5)
+    # weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=5, replicaset="rs0")
     weakDB = weakClient[MYDB]
     weakCol = weakDB[TABLENAME]
     weakCol.insert_one(weakDict)
+
+    print("done creating strong and weak client")
 
     threadList = []
     for i in range(CLINUM): 
