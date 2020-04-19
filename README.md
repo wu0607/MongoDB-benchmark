@@ -60,3 +60,62 @@ rs.initiate( {
 })
 ```
 8. Run `rs.status()` in mongodb and find out node with `"stateStr" : "PRIMARY"`, use this ip address to run `measure.py --host [master_ip]:[master_port] --strong --weak`
+
+
+### Run 3-node server(master-slave) on three different machines(cloudLab)
+reference: https://computingforgeeks.com/how-to-setup-mongodb-replication-on-ubuntu-18-04-lts/
+<br>[Belowed steps should be applied to all three servers]
+1. Create database path
+```
+sudo mkdir /data
+sudo mkdir /data/mongodb
+```
+2. Change the Owenership & Permission of this folder
+```
+sudo chown -R mongodb:mongodb /data/mongodb
+sudo chmod -R 775 /data/mongodb
+```
+3. Modify the configs, change the `dbPath`, `replication set`, `port value` and `bind IP`
+```
+sudo vim /etc/mongod.conf
+   net:
+      port: 27017
+      bindIp: 10.10.1.1 (10.10.1.2 on 2nd machine & 10.10.1.3 on 3rd machine)
+   storage:
+      dbPath: /data/mongodb
+      journal:
+         enabled: true
+   replication:
+      replSetName: "replica01"
+```
+4. Open port 27017/tcp on the firewall
+```
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow 27017/tcp
+```
+5. Configure MongoDB to start during the operating system’s boot
+```
+sudo systemctl enable mongod.service
+sudo systemctl restart mongod.service
+```
+6. Check the listen Address of MongoDB service:
+```
+ss -tunelp
+```
+7. Setting replication
+```
+mongo 10.10.1.1 (10.10.1.2 on 2nd machine & 10.10.1.3 on 3rd machine)
+> rs.initiate( {
+   _id : "replica01",
+   members: [
+      { _id: 0, host: "10.10.1.1:27017" },
+      { _id: 1, host: "10.10.1.2:27017" },
+      { _id: 2, host: "10.10.1.3:27017" }
+   ]
+})
+// Then add the other nodes only on one command promt (here if 10.10.1.1)
+> rs.add("10.10.1.2")
+> rs.add("10.10.1.3")
+```
+8. Run `rs.status()` in mongodb and find out node with `"stateStr" : "PRIMARY"`, use this ip address to run `measure.py --host [master_ip]:[master_port] --strong --weak`
