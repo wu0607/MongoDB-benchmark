@@ -11,7 +11,7 @@ strongDict = {"node": "/1", "value": "strong"}
 weakDict = {"node": "/2", "value": "weak"}
 CLINUM = 6
 hostname = "mongodb://localhost:27017/"
-
+stop_event = threading.Event()
 
 def print_table(printDB):
     print("==========")
@@ -20,9 +20,11 @@ def print_table(printDB):
     print("==========")
 
 
-def updateAndGetTime(op, insertDB, insertDict, threadIdx):
+def updateAndGetTime(op, insertDB, insertDict, threadIdx, timeout_):
     count = 0
     totalTime = 0
+    timeout = time.time() + timeout_
+
     while(True):
         count += 1
         start = time.time()
@@ -35,13 +37,19 @@ def updateAndGetTime(op, insertDB, insertDict, threadIdx):
                  {}ms ".format(op, threadIdx, count,
                              totalTime*1000/count, totalTime*1000))
 
+        if time.time() > timeout:
+            print("=====Final===== {:8s}- {}: count: {}, avg_time: {}ms, total time:\
+                 {}ms ".format(op, threadIdx, count,
+                             totalTime*1000/count, totalTime*1000))
+            break
+
 
 def threadFunction(args):
-    op, threadIdx = args
+    op, threadIdx, timeout = args
     if op == STRONG:
-        updateAndGetTime(STRONG, strongCol, {"node": "/1"}, threadIdx)
+        updateAndGetTime(STRONG, strongCol, {"node": "/1"}, threadIdx, timeout)
     elif op == WEAK:
-        updateAndGetTime(WEAK, weakCol, {"node": "/2"}, threadIdx)
+        updateAndGetTime(WEAK, weakCol, {"node": "/2"}, threadIdx, timeout)
 
 
 if __name__ == '__main__':
@@ -49,8 +57,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument("--host", help="host ip")
     parser.add_argument("--mode", type=str, default="strong", help="strong weak mix")
-    # parser.add_argument("--weak", action='store_true', help='weak request')
-    # parser.add_argument("--strong", action='store_true', help='strong request')
+    parser.add_argument("--time", type=int, default=30, help="total sec for throughput")
     opt = parser.parse_args()
     if opt.host:
         hostname = opt.host
@@ -72,26 +79,29 @@ if __name__ == '__main__':
     threadList = []
     for i in range(CLINUM):
         if opt.mode == "strong":
-            x = threading.Thread(target=threadFunction, args=((STRONG, i),))
+            x = threading.Thread(target=threadFunction, args=((STRONG, i, opt.time),))
+            # x = threading.Timer(interval=opt.time, function=threadFunction, args=((STRONG, i),))
             threadList.append(x)
             x.start()
         elif opt.mode == "weak":
-            x = threading.Thread(target=threadFunction, args=((WEAK, i),))
+            x = threading.Thread(target=threadFunction, args=((WEAK, i, opt.time),))
+            # x = threading.Timer(interval=opt.time, function=threadFunction, args=((WEAK, i),))
             threadList.append(x)
             x.start()
         elif opt.mode == "mix":
             if i % 2 == 0:
-                x = threading.Thread(target=threadFunction, args=((STRONG, i),))
+                x = threading.Thread(target=threadFunction, args=((STRONG, i, opt.time),))
+                # x = threading.Timer(interval=opt.time, function=threadFunction, args=((STRONG, i),))
                 threadList.append(x)
                 x.start()
             else:
-                x = threading.Thread(target=threadFunction, args=((WEAK, i),))
+                x = threading.Thread(target=threadFunction, args=((WEAK, i, opt.time),))
+                # x = threading.Timer(interval=opt.time, function=threadFunction, args=((WEAK, i),))
                 threadList.append(x)
                 x.start()
-        
 
-    for t in threadList: 
-        t.join()
+    for t in threadList:
+        t.join(opt.time)
 
     # see result and delete data
     client = pymongo.MongoClient(hostname)
