@@ -58,6 +58,7 @@ if __name__ == '__main__':
     parser.add_argument("--host", help="host ip")
     parser.add_argument("--mode", type=str, default="strong", help="strong weak mix")
     parser.add_argument("--time", type=int, default=30, help="total sec for throughput")
+    parser.add_argument("--w_mode", type=int, default=1, help="weak mode 1:(w=1, j=False) 2:(w=majority, j=False) 3:(w=1, j=True)")
     opt = parser.parse_args()
     if opt.host:
         hostname = opt.host
@@ -69,7 +70,15 @@ if __name__ == '__main__':
         strongCol = strongDB[TABLENAME]
         strongCol.insert_one(strongDict) # init with /1
     if opt.mode == "weak" or opt.mode == "mix":
-        weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=20)
+        if opt.w_mode == 1:
+            print("using setting w=1 j=False")
+            weakClient = pymongo.MongoClient(hostname, w=1, j=False, maxPoolSize=20)
+        elif opt.w_mode == 2:
+            print("using setting w=majority j=False")
+            weakClient = pymongo.MongoClient(hostname, w="majority", j=False, maxPoolSize=20)
+        elif opt.w_mode == 3:
+            print("using setting w=1 j=True")
+            weakClient = pymongo.MongoClient(hostname, w=1, j=True, maxPoolSize=20)
         weakDB = weakClient[MYDB]
         weakCol = weakDB[TABLENAME]
         weakCol.insert_one(weakDict) # init with /2
