@@ -20,10 +20,12 @@ def print_table(printDB):
     print("==========")
 
 
-def updateAndGetTime(op, insertDB, insertDict, threadIdx, timeout_):
+def updateAndGetTime(op, insertDB, insertDict, threadIdx, timeout_, warm_):
     count = 0
     totalTime = 0
-    timeout = time.time() + timeout_
+    timeout = time.time() + timeout_ + warm_
+    timeout_warm = time.time() + warm_
+    done_warm = False
 
     while(True):
         count += 1
@@ -32,24 +34,25 @@ def updateAndGetTime(op, insertDB, insertDict, threadIdx, timeout_):
         end = time.time()
         totalTime += (end - start)
 
-        if count and count % 1000 == 0:
-            print("{:8s}- {}: count: {}, avg_time: {}ms, total time:\
-                 {}ms ".format(op, threadIdx, count,
-                             totalTime*1000/count, totalTime*1000))
+        if not done_warm and time.time() > timeout_warm:
+            # print("{:8s}- {}: count: {}, avg_time: {}ms, total time:{}ms =====Warm===== ".format(op, threadIdx, count, totalTime*1000/count, totalTime*1000))
+            print("{:8s}\t{}\tcount\t{}\tavg_time\t{:.5f} ms\ttotal_time\t{:.5f} ms\tWarm ".format(op, threadIdx, count, totalTime*1000/count, totalTime*1000))
+            count = 0
+            totalTime = 0
+            done_warm = True
 
         if time.time() > timeout:
-            print("=====Final===== {:8s}- {}: count: {}, avg_time: {}ms, total time:\
-                 {}ms ".format(op, threadIdx, count,
-                             totalTime*1000/count, totalTime*1000))
+            print("{:8s}\t{}\tcount\t{}\tavg_time\t{:.5f} ms\ttotal_time\t{:.5f} ms\tFinal ".format(op, threadIdx, count, totalTime*1000/count, totalTime*1000))
+            # print("{:8s}- {}: count: {}, avg_time: {}ms, total time:{}ms =====Final===== ".format(op, threadIdx, count, totalTime*1000/count, totalTime*1000))
             break
 
 
 def threadFunction(args):
-    op, threadIdx, timeout = args
+    op, threadIdx, opt = args
     if op == STRONG:
-        updateAndGetTime(STRONG, strongCol, {"node": "/1"}, threadIdx, timeout)
+        updateAndGetTime(STRONG, strongCol, {"node": "/1"}, threadIdx, opt.time, opt.warm_time)
     elif op == WEAK:
-        updateAndGetTime(WEAK, weakCol, {"node": "/2"}, threadIdx, timeout)
+        updateAndGetTime(WEAK, weakCol, {"node": "/2"}, threadIdx, opt.time, opt.warm_time)
 
 
 if __name__ == '__main__':
@@ -57,7 +60,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument("--host", help="host ip")
     parser.add_argument("--mode", type=str, default="strong", help="strong weak mix")
-    parser.add_argument("--time", type=int, default=30, help="total sec for throughput")
+    parser.add_argument("--time", type=int, default=60, help="total sec for throughput")
+    parser.add_argument("--warm_time", type=int, default=30, help="time for warm up")
     parser.add_argument("--w_mode", type=int, default=1, help="weak mode 1:(w=1, j=False) 2:(w=majority, j=False) 3:(w=1, j=True)")
     opt = parser.parse_args()
     if opt.host:
@@ -88,23 +92,23 @@ if __name__ == '__main__':
     threadList = []
     for i in range(CLINUM):
         if opt.mode == "strong":
-            x = threading.Thread(target=threadFunction, args=((STRONG, i, opt.time),))
+            x = threading.Thread(target=threadFunction, args=((STRONG, i, opt),))
             # x = threading.Timer(interval=opt.time, function=threadFunction, args=((STRONG, i),))
             threadList.append(x)
             x.start()
         elif opt.mode == "weak":
-            x = threading.Thread(target=threadFunction, args=((WEAK, i, opt.time),))
+            x = threading.Thread(target=threadFunction, args=((WEAK, i, opt),))
             # x = threading.Timer(interval=opt.time, function=threadFunction, args=((WEAK, i),))
             threadList.append(x)
             x.start()
         elif opt.mode == "mix":
             if i % 2 == 0:
-                x = threading.Thread(target=threadFunction, args=((STRONG, i, opt.time),))
+                x = threading.Thread(target=threadFunction, args=((STRONG, i, opt),))
                 # x = threading.Timer(interval=opt.time, function=threadFunction, args=((STRONG, i),))
                 threadList.append(x)
                 x.start()
             else:
-                x = threading.Thread(target=threadFunction, args=((WEAK, i, opt.time),))
+                x = threading.Thread(target=threadFunction, args=((WEAK, i, opt),))
                 # x = threading.Timer(interval=opt.time, function=threadFunction, args=((WEAK, i),))
                 threadList.append(x)
                 x.start()
