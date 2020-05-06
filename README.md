@@ -1,4 +1,6 @@
 # MongoDB-benchmark
+Here we compare MongoDB's performance with Zookeeper for serving multi-consistency level's requests <br>
+For the main project, please go to https://github.com/YiShiunChang/zookeeper 
 
 ### Write-only workload on a cluster of 3 servers + 6 closed-loop clients
 Three different client settings:
@@ -13,7 +15,7 @@ python measure.py --strong --weak
 ```
 
 ### Run 3-node server(master-slave) on single machine (Ubuntu)
-reference: https://medium.com/@akshay2gud/creating-multiple-instances-of-mongodb-on-server-and-setting-replication-of-database-5ead59e1e4d4
+Reference: https://medium.com/@akshay2gud/creating-multiple-instances-of-mongodb-on-server-and-setting-replication-of-database-5ead59e1e4d4
 1. Create database path
 ```
    cd /var
