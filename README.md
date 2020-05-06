@@ -2,6 +2,14 @@
 Here we compare MongoDB's performance with Zookeeper for serving multi-consistency level's requests <br>
 For the main project, please go to https://github.com/YiShiunChang/zookeeper 
 
+## Result
+We run 3-node server(master-slave) on three different machines(CloudLab) & 6 clients on another machine(CloudLab)
+- Latency <br>
+  <img src=./images/Latency.png width="60%">
+- Throughput <br>
+  <img src=./images/Throughput.png width="60%">
+
+## Experiment Setup
 ### Write-only workload on a cluster of 3 servers + 6 closed-loop clients
 Three different client settings:
 1. All strong: 6 strong
